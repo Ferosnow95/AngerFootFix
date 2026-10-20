@@ -56,23 +56,6 @@ Adjust settings in `Anger Foot\BepInEx\config\ferosnow.angerfoot.ultrawide.cfg`.
 | `VerboseLog` | `false` | More logging. |
 | `Toggle` / `Dump` / `OffsetDown` / `OffsetUp` | `F8` / `F7` / `F5` / `F6` | Key bindings. |
 
-## How it works
-Anger Foot draws the world and the hands with two separate Unity cameras inside `PlayerCamera`: `_mainCamera` (plus an effects camera and the blood decal camera) and `_weaponCamera`.
-
-Every frame, `PlayerCamera.ApplyFOV()` writes the FOV slider (`GameSettings.FieldOfView`, 30–120, default 75) to the world cameras. Unity's `fieldOfView` is **vertical**, so the world is already Hor+: on 32:9 the default 75° is about 140° wide, and 120° is about 162° wide. The weapon camera is never touched. It keeps the **60°** it was built with, so at a high FOV the world zooms out while the hands and guns stay huge.
-
-The fix is a Harmony postfix on `PlayerCamera.ApplyFOV()`. It records the weapon camera's own FOV once, then sets it every frame from that original value, so nothing compounds:
-
-```
-tan(weapon / 2) = tan(original / 2) × ( tan(slider / 2) / tan(75 / 2) ) ^ FollowStrength
-```
-
-75° is the game's own baseline (`PlayerCamera.BASELINE_FOV`). At 75 nothing changes. At 120 the weapon camera goes from 60° to 105°, so the hands scale by exactly the same amount as the world.
-
-`Match16x9Placement` multiplies the same tangent by `aspect / (16/9)`, so a hand at a given horizontal spot on a 16:9 screen lands at the same fraction of the width on yours.
-
-The plugin follows the **slider**, not the live camera FOV, so aim-down-sights (8°) and scripted look-at zooms keep the viewmodel the game intended. The game's own conversion from weapon-camera space to world space (`ConvertFromWeaponCameraSpaceToMainCameraSpace`, used for shell ejection) goes through the viewport, so it stays correct.
-
 ## Known issues
 - Hands and guns are one rig that sits near the centre of the screen. The fix scales them with the FOV; it doesn't move each hand separately. Use `Match16x9Placement` if you want them further out.
 - Developed and tested on one PC (32:9, 5120×1440). Reports from 21:9 and 48:9 (triple-screen) setups are welcome.
